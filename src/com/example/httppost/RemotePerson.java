@@ -33,14 +33,36 @@ public class RemotePerson {
       return;
     }
 
-    new HttpAsyncTask().execute("http://hmkcode.appspot.com/jsonservlet");
+    String url = "http://hmkcode.appspot.com/jsonservlet";
+    try {
+      HttpPost payload = buildRequest(url, new StringEntity(person.asJsonString()));
+      HttpAsyncTask task = new HttpAsyncTask();
+      task.setPayload(payload);
+      task.execute();
+    } catch (Exception e) {
+      Log.d("JsonParse", e.getLocalizedMessage());
+    }
+  }
+
+  private HttpPost buildRequest(String url, StringEntity entity) {
+    HttpPost payload = new HttpPost(url);
+    payload.setEntity(entity);
+    payload.setHeader("Accept", "application/json");
+    payload.setHeader("Content-type", "application/json");
+
+    return payload;
   }
 
   private class HttpAsyncTask extends AsyncTask<String, Void, String> {
+    HttpPost payload;
+
+    public void setPayload(HttpPost payload) {
+      this.payload = payload;
+    }
 
     @Override
     protected String doInBackground(String... urls) {
-      return sendPost(urls[0], person);
+      return sendPost(payload);
     }
 
     @Override
@@ -49,17 +71,11 @@ public class RemotePerson {
     }
   }
 
-  private static String sendPost(String url, Person person) {
+  private static String sendPost(HttpPost httpPost) {
     String result = "";
 
     try {
       HttpClient httpClient = new DefaultHttpClient();
-      HttpPost httpPost = new HttpPost(url);
-
-      httpPost.setEntity(new StringEntity(person.asJsonString()));
-      httpPost.setHeader("Accept", "application/json");
-      httpPost.setHeader("Content-type", "application/json");
-
       HttpResponse response = httpClient.execute(httpPost);
 
       result = getResponseString(response);
